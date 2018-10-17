@@ -47,7 +47,7 @@ winGame (Board b) = (length [t| t<- elems b,t==Peg ])==1
 loseGame :: Board -> Bool
 loseGame (Board b) = length (possiblePlayOnBoard (Board b)) == 0
 
---possiblePlayOnBoard :: Board -> [Action]
+possiblePlayOnBoard :: Board -> [Action]
 possiblePlayOnBoard (Board b) = foldl (++) [] [possiblePlayOnPos pos (Board b)|pos<-indices b]
 
 possiblePlayOnPos :: (Int,Int) -> Board -> [Action]
@@ -150,12 +150,14 @@ askForAction board = do
     dir <- (askForDir (x,y) board)
     return (Action ((x,y),dir))
 
-play :: IO [Action]
+play :: IO ()
 play = do
     putStr "Time to play the game!\n(0,0) is top corner"
-    playGame initialBoard Continue []
+    (result,actions) <- (playGame initialBoard Continue [])
+    putStrLn("You "++(show result))
+    putStrLn("Your actions: " ++ (show actions))
 
-playGame :: Board -> State -> [Action]-> IO [Action]
+playGame :: Board -> State -> [Action]-> IO (State, [Action])
 playGame board state actions= do
     putStrLn ("Current board:")
     putStr (show board)
@@ -168,9 +170,8 @@ playGame board state actions= do
     else do
         let b = (fromJust nextBoard)
         let s = getState b
-        if (s == Win||s == Lose) then do
-            putStrLn("You "++(show s))
-            return (actions++[action])
+        if (s == Win||s == Lose) then 
+            return (s, (actions++[action]))
         else    
             playGame b s (actions++[action])
         
