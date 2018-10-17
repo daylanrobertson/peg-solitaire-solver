@@ -9,6 +9,7 @@ module Game where
 import Data.Array
 import Data.Maybe
 import Control.Monad
+import Text.Read
 
 data Tile = Invalid | Empty | Peg
     deriving (Eq, Ord)
@@ -64,37 +65,71 @@ pegAt position (Board board) = do
 placePiece :: (Int, Int) -> Tile -> Board -> Board
 placePiece position tile (Board board) = Board (board // [(position, tile)])
 
-newPositions (x,y) Up  = ((x,y+1), (x,y+2))
+newPositions (x,y) Down  = ((x,y+1), (x,y+2))
 newPositions (x,y) Game.Right   = ((x+1,y), (x+2,y))
-newPositions (x,y) Game.Down  = ((x,y-1), (x,y-2))
+newPositions (x,y) Game.Up  = ((x,y-1), (x,y-2))
 newPositions (x,y) Game.Left   = ((x-1,y), (x-2,y))
 
 makeMove :: (Int, Int) -> Direction -> Board -> Maybe Board
 makeMove position direction board = do
-    Peg <- pegAt position board
+    recent <- pegAt position board
     let (over, destination) = newPositions position direction
-    Peg <- pegAt over board
-    Empty <- pegAt destination board
+    o <- pegAt over board
+    des <- pegAt destination board
+    if (recent==Peg&&o==Peg&&des==Empty) then
+        return  . placePiece position Empty 
+                . placePiece over Empty  
+                . placePiece destination Peg 
+                $ board
+    else do
+        Nothing
 
-    return  . placePiece position Empty 
-            . placePiece over Empty  
-            . placePiece destination Peg 
-            $ board
+askFor :: String -> IO Int
+askFor s = do
+    putStr (s++": ")
+    x <- getLine
+    let xMaybeInt = readMaybe (x)
+    let xInt = fromMaybe (-1) xMaybeInt
+    if (xInt<0||xInt>6) then do
+        putStrLn("Your choise of position is illegal\nPlease choose again")
+        askFor s
+    else
+        (return xInt)
+askForDir :: IO Direction
+askForDir = do
+    putStrLn("Choose a direction")
+    d <- getLine
+    --let dString = read (d)::String
+    let dDir = (stringToDirection d)
+    if (isNothing dDir) then do
+        putStrLn("invalid direction")
+        askForDir
+    else return (fromJust dDir)
+
+stringToDirection :: String -> Maybe Direction
+stringToDirection s
+    | s == "up" =  Just Up
+    | s == "down" = Just Down   
+    | s == "left" = Just Game.Left
+    | s == "right" = Just Game.Right
+    | otherwise = Nothing
 
 play = do
     putStr "Time to play the game!\n"
     playGame initialBoard
 
 playGame board = do
+    putStrLn ("Current board:")
     putStr (show board)
     putStr "Make a move:\n"
-    putStr "X: "
-    x <- getLine
-    putStr "Y: "
-    y <- getLine
-    let xInt = read (x) :: Int
-    let yInt = read (y) :: Int
-    -- putStr "Direction: \n"
-    let nextBoard = makeMove (xInt,yInt) Up board
-    if (nextBoard == Nothing) then putStr "invalid move\n" 
-    else putStr "valid move\n"
+    xInt <- askFor "X"
+    yInt <- askFor "Y"
+    d <- askForDir
+    let nextBoard = makeMove (xInt,yInt) d board
+    if (nextBoard == Nothing) then do
+        putStrLn("Previous move is illegal")
+        playGame board
+    else playGame (fromJust nextBoard)
+    
+
+
