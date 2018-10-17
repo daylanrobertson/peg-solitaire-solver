@@ -20,7 +20,7 @@ data Direction = Up | Down | Left | Right
 data State = Win | Lose | Continue
     deriving (Eq, Show)
 
-data Action = Action (Int,Int) Direction
+data Action = Action ((Int,Int), Direction)
 
 
 newtype Board = Board (Array (Int, Int) Tile)
@@ -33,7 +33,7 @@ instance Show Board where
     show (Board board) = unlines [unwords [show (board ! (x, y)) | x <- [0..6]] | y <- [0..6]]
 
 instance Show Action where
-    show (Action (x,y) d) = "{"++show (x,y) ++" "++ show (d)++"}"
+    show (Action ((x,y), d)) = "("++show (x,y) ++", "++ show (d)++")"
 
 getState :: Board -> State
 getState board
@@ -51,7 +51,7 @@ loseGame (Board b) = length (possiblePlayOnBoard (Board b)) == 0
 possiblePlayOnBoard (Board b) = foldl (++) [] [possiblePlayOnPos pos (Board b)|pos<-indices b]
 
 possiblePlayOnPos :: (Int,Int) -> Board -> [Action]
-possiblePlayOnPos (x,y) board = [Action (x,y) dir |dir <- [Up .. ],isJust (makeMove (x,y) dir board)]
+possiblePlayOnPos position board = [Action (position, dir) |dir <- [Up .. ],isJust (makeMove (Action (position,dir)) board)]
 
 tileToString :: Tile -> String
 tileToString t
@@ -97,8 +97,8 @@ newPositions (x,y) Game.Right   = ((x+1,y), (x+2,y))
 newPositions (x,y) Game.Up  = ((x,y-1), (x,y-2))
 newPositions (x,y) Game.Left   = ((x-1,y), (x-2,y))
 
-makeMove :: (Int, Int) -> Direction -> Board -> Maybe Board
-makeMove position direction board = do
+makeMove :: Action -> Board -> Maybe Board
+makeMove (Action (position, direction)) board = do
     recent <- pegAt position board
     let (over, destination) = newPositions position direction
     o <- pegAt over board
@@ -124,7 +124,7 @@ askFor s = do
         (return xInt)
 askForDir :: (Int, Int) -> Board -> IO Direction
 askForDir (x,y) board = do
-    --putStrLn("Choose a among")
+    putStrLn("Choose a direction")
     --putStrLn(show (possiblePlayOnPos (x,y) board))
     d <- getLine
     --let dString = read (d)::String
@@ -142,6 +142,13 @@ stringToDirection s
     | s == "right"|| s == "r" = Just Game.Right
     | otherwise = Nothing
 
+askForAction :: Board -> IO Action
+askForAction board = do
+    putStr "Make a move:\n"
+    x <- askFor "X" 
+    y <- askFor "Y" 
+    dir <- (askForDir (x,y) board)
+    return (Action ((x,y),dir))
 play = do
     putStr "Time to play the game!\n"
     playGame initialBoard Continue
@@ -152,11 +159,8 @@ playGame board state
     | otherwise = do
         putStrLn ("Current board:")
         putStr (show board)
-        putStr "Make a move:\n"
-        xInt <- askFor "X"
-        yInt <- askFor "Y"
-        d <- askForDir (xInt, yInt) board
-        let nextBoard = makeMove (xInt,yInt) d board
+        action <- askForAction board
+        let nextBoard = makeMove action board
         if (nextBoard == Nothing) then do
             putStrLn("Previous move is illegal")
             playGame board state
