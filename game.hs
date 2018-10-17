@@ -20,6 +20,9 @@ data Direction = Up | Down | Left | Right
 data State = Win | Lose | Continue
     deriving (Eq, Show)
 
+data Action = Action (Int,Int) Direction
+
+
 newtype Board = Board (Array (Int, Int) Tile)
     deriving (Eq, Ord)
 
@@ -28,6 +31,9 @@ instance Show Tile where
 
 instance Show Board where
     show (Board board) = unlines [unwords [show (board ! (x, y)) | x <- [0..6]] | y <- [0..6]]
+
+instance Show Action where
+    show (Action (x,y) d) = "{"++show (x,y) ++" "++ show (d)++"}"
 
 getState :: Board -> State
 getState board
@@ -39,13 +45,13 @@ winGame :: Board -> Bool
 winGame (Board b) = (length [t| t<- elems b,t==Peg ])==1
 
 loseGame :: Board -> Bool
-loseGame (Board b) = length [p|p <- indices b,(playable p (Board b))] == 0
+loseGame (Board b) = length (possiblePlayOnBoard (Board b)) == 0
 
-playable :: (Int,Int) -> Board -> Bool
-playable (x,y) board = (isJust (makeMove (x,y) Up board))||
-    (isJust (makeMove (x,y) Down board))||
-        (isJust (makeMove (x,y) Game.Left board))||
-            (isJust (makeMove (x,y) Game.Right board))
+--possiblePlayOnBoard :: Board -> [Action]
+possiblePlayOnBoard (Board b) = foldl (++) [] [possiblePlayOnPos pos (Board b)|pos<-indices b]
+
+possiblePlayOnPos :: (Int,Int) -> Board -> [Action]
+possiblePlayOnPos (x,y) board = [Action (x,y) dir |dir <- [Up .. ],isJust (makeMove (x,y) dir board)]
 
 tileToString :: Tile -> String
 tileToString t
@@ -116,15 +122,16 @@ askFor s = do
         askFor s
     else
         (return xInt)
-askForDir :: IO Direction
-askForDir = do
-    putStrLn("Choose a direction")
+askForDir :: (Int, Int) -> Board -> IO Direction
+askForDir (x,y) board = do
+    --putStrLn("Choose a among")
+    --putStrLn(show (possiblePlayOnPos (x,y) board))
     d <- getLine
     --let dString = read (d)::String
     let dDir = (stringToDirection d)
     if (isNothing dDir) then do
         putStrLn("invalid direction")
-        askForDir
+        askForDir (x,y) board
     else return (fromJust dDir)
 
 stringToDirection :: String -> Maybe Direction
@@ -148,7 +155,7 @@ playGame board state
         putStr "Make a move:\n"
         xInt <- askFor "X"
         yInt <- askFor "Y"
-        d <- askForDir
+        d <- askForDir (xInt, yInt) board
         let nextBoard = makeMove (xInt,yInt) d board
         if (nextBoard == Nothing) then do
             putStrLn("Previous move is illegal")
