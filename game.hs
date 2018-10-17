@@ -149,24 +149,30 @@ askForAction board = do
     y <- askFor "Y" 
     dir <- (askForDir (x,y) board)
     return (Action ((x,y),dir))
-play = do
-    putStr "Time to play the game!\n"
-    playGame initialBoard Continue
 
-playGame board state
-    | state == Win = putStrLn("Congratulation, you win")
-    | state == Lose = putStrLn("No more move, you lose")
-    | otherwise = do
-        putStrLn ("Current board:")
-        putStr (show board)
-        action <- askForAction board
-        let nextBoard = makeMove action board
-        if (nextBoard == Nothing) then do
-            putStrLn("Previous move is illegal")
-            playGame board state
-        else do
-            let b = (fromJust nextBoard)
-            playGame b (getState b)
+play :: IO [Action]
+play = do
+    putStr "Time to play the game!\n(0,0) is top corner"
+    playGame initialBoard Continue []
+
+playGame :: Board -> State -> [Action]-> IO [Action]
+playGame board state actions= do
+    putStrLn ("Current board:")
+    putStr (show board)
+    action <- askForAction board
+    let nextBoard = makeMove action board
+    if (nextBoard == Nothing) then do
+        putStrLn("Previous move is illegal")
+        playGame board state actions
+
+    else do
+        let b = (fromJust nextBoard)
+        let s = getState b
+        if (s == Win||s == Lose) then do
+            putStrLn("You "++(show s))
+            return (actions++[action])
+        else    
+            playGame b s (actions++[action])
         
 
 
