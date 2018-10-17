@@ -17,6 +17,9 @@ data Tile = Invalid | Empty | Peg
 data Direction = Up | Down | Left | Right
     deriving (Enum, Show)
 
+data State = Win | Lose | Continue
+    deriving (Eq, Show)
+
 newtype Board = Board (Array (Int, Int) Tile)
     deriving (Eq, Ord)
 
@@ -25,6 +28,24 @@ instance Show Tile where
 
 instance Show Board where
     show (Board board) = unlines [unwords [show (board ! (x, y)) | x <- [0..6]] | y <- [0..6]]
+
+getState :: Board -> State
+getState board
+    |winGame board = Win
+    |loseGame board = Lose
+    |otherwise = Continue
+
+winGame :: Board -> Bool
+winGame (Board b) = (length [t| t<- elems b,t==Peg ])==1
+
+loseGame :: Board -> Bool
+loseGame (Board b) = length [p|p <- indices b,(playable p (Board b))] == 0
+
+playable :: (Int,Int) -> Board -> Bool
+playable (x,y) board = (isJust (makeMove (x,y) Up board))||
+    (isJust (makeMove (x,y) Down board))||
+        (isJust (makeMove (x,y) Game.Left board))||
+            (isJust (makeMove (x,y) Game.Right board))
 
 tileToString :: Tile -> String
 tileToString t
@@ -108,28 +129,33 @@ askForDir = do
 
 stringToDirection :: String -> Maybe Direction
 stringToDirection s
-    | s == "up" =  Just Up
-    | s == "down" = Just Down   
-    | s == "left" = Just Game.Left
-    | s == "right" = Just Game.Right
+    | s == "up"|| s == "u" =  Just Up
+    | s == "down"|| s == "d" = Just Down   
+    | s == "left"|| s == "l" = Just Game.Left
+    | s == "right"|| s == "r" = Just Game.Right
     | otherwise = Nothing
 
 play = do
     putStr "Time to play the game!\n"
-    playGame initialBoard
+    playGame initialBoard Continue
 
-playGame board = do
-    putStrLn ("Current board:")
-    putStr (show board)
-    putStr "Make a move:\n"
-    xInt <- askFor "X"
-    yInt <- askFor "Y"
-    d <- askForDir
-    let nextBoard = makeMove (xInt,yInt) d board
-    if (nextBoard == Nothing) then do
-        putStrLn("Previous move is illegal")
-        playGame board
-    else playGame (fromJust nextBoard)
-    
+playGame board state
+    | state == Win = putStrLn("Congratulation, you win")
+    | state == Lose = putStrLn("No more move, you lose")
+    | otherwise = do
+        putStrLn ("Current board:")
+        putStr (show board)
+        putStr "Make a move:\n"
+        xInt <- askFor "X"
+        yInt <- askFor "Y"
+        d <- askForDir
+        let nextBoard = makeMove (xInt,yInt) d board
+        if (nextBoard == Nothing) then do
+            putStrLn("Previous move is illegal")
+            playGame board state
+        else do
+            let b = (fromJust nextBoard)
+            playGame b (getState b)
+        
 
 
