@@ -11,13 +11,28 @@ import Data.Maybe
 import Control.Monad
 
 data Tile = Invalid | Empty | Peg
-    deriving (Eq, Ord, Show)
+    deriving (Eq, Ord)
 
 data Direction = Up | Down | Left | Right
     deriving (Enum, Show)
 
 newtype Board = Board (Array (Int, Int) Tile)
-    deriving (Eq, Ord, Show)
+    deriving (Eq, Ord)
+
+instance Show Tile where
+    show t = tileToString(t)
+
+instance Show Board where
+    show (Board board) = unlines [unwords [show (board ! (x, y)) | x <- [0..6]] | y <- [0..6]]
+
+tileToString :: Tile -> String
+tileToString t
+    | t == Invalid = "x"
+    | t == Empty = "o"
+    | otherwise = "i"
+
+boardToArray :: Board -> Array (Int, Int) Tile
+boardToArray (Board board) = board
 
 isValidLocation :: (Int, Int) -> Bool
 isValidLocation (x,y) =
@@ -71,6 +86,7 @@ play = do
     playGame initialBoard
 
 playGame board = do
+    putStr (show board)
     putStr "Make a move:\n"
     putStr "X: "
     x <- getLine
