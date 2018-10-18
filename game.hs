@@ -42,7 +42,7 @@ getState board
     |otherwise = Continue
 
 winGame :: Board -> Bool
-winGame (Board b) = (length [t| t<- elems b,t==Peg ])==1
+winGame (Board b) = ((length [t| t<- elems b,t==Peg ])==1 && fromJust(pegAt(3,3) (Board b))==Peg)
 
 loseGame :: Board -> Bool
 loseGame (Board b) = length (possiblePlayOnBoard (Board b)) == 0
@@ -55,7 +55,7 @@ possiblePlayOnPos position board = [Action (position, dir) |dir <- [Up .. ],isJu
 
 tileToString :: Tile -> String
 tileToString t
-    | t == Invalid = "x"
+    | t == Invalid = " "
     | t == Empty = "o"
     | otherwise = "i"
 
@@ -149,6 +149,9 @@ askForAction board = do
     y <- askFor "Y" 
     dir <- (askForDir (x,y) board)
     return (Action ((x,y),dir))
+
+solve :: Board -> (State, [Action])
+solve board = (Lose, [])
 
 play :: IO ()
 play = do
