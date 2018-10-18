@@ -181,6 +181,34 @@ solveHelper moves board movesSoFar = do
             -- ((getState (fromJust nextBoard)), (movesSoFar++[firstMove]))
 
 
+            
+testing = solveHelperDebug (possiblePlayOnBoard initialBoard) initialBoard []
+
+solveHelperDebug moves board movesSoFar = do
+    if (length moves == 0) then do
+        return (Lose, movesSoFar)
+    else do
+        let firstMove = moves !! 0
+        let nextBoard = makeMove firstMove board
+            -- let nextMoves = delete (moves !! 0) moves
+            -- solveHelper nextMoves board movesSoFar
+        if (getState (fromJust nextBoard) == Continue) then do
+            (state, actions) <- solveHelperDebug(possiblePlayOnBoard (fromJust nextBoard)) (fromJust nextBoard) (movesSoFar++[firstMove])
+            if (state == Lose) then do
+                let restOfMoves = delete (moves !! 0) moves
+                solveHelperDebug restOfMoves board movesSoFar
+            else return (state, actions)
+        else if (getState (fromJust nextBoard) == Lose) then do
+            putStrLn("hi")
+            return (Lose, movesSoFar++[firstMove])
+            -- let nextMoves = delete (moves !! 0) moves
+            -- solveHelper nextMoves board movesSoFar
+        else
+            return (Win, movesSoFar++[firstMove])
+            -- ((getState (fromJust nextBoard)), (movesSoFar++[firstMove]))
+
+
+
 cheaterCheck :: Action -> Bool
 cheaterCheck (Action ((x,y), d)) = (x==0&&y==0&&d==Up)
 
