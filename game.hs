@@ -15,7 +15,7 @@ data Tile = Invalid | Empty | Peg
     deriving (Eq, Ord)
 
 data Direction = Up | Down | Left | Right
-    deriving (Enum, Show)
+    deriving (Enum, Show,Eq)
 
 data State = Win | Lose | Continue
     deriving (Eq, Show)
@@ -153,6 +153,9 @@ askForAction board = do
 solve :: Board -> (State, [Action])
 solve board = (Lose, [])
 
+cheaterCheck :: Action -> Bool
+cheaterCheck (Action ((x,y), d)) = (x==0&&y==0&&d==Up)
+
 play :: IO ()
 play = do
     putStr "Time to play the game!\n(0,0) is top corner"
@@ -166,7 +169,10 @@ playGame board state actions= do
     putStr (show board)
     action <- askForAction board
     let nextBoard = makeMove action board
-    if (nextBoard == Nothing) then do
+    if (cheaterCheck action) then do
+        let (resultState,computedActions) = solve board
+        return (resultState, actions++computedActions)
+    else if (nextBoard == Nothing) then do
         putStrLn("Previous move is illegal")
         playGame board state actions
 
