@@ -18,6 +18,9 @@ data Tile = Invalid | Empty | Peg
 data Direction = Up | Down | Left | Right
     deriving (Enum, Show,Eq)
 
+data BoardType = English | European
+    deriving (Enum, Show, Eq)
+
 data State = Win | Lose | Continue
     deriving (Eq, Show)
 
@@ -80,8 +83,8 @@ initializeLocations position
   | isInvalidLocation position = Invalid
   | otherwise = Peg
 
-initialBoard :: Board
-initialBoard = Board (array ((0,0), (6,6)) [ (location, initializeLocations location) | location <- allLocations ])
+initialBoard :: BoardType -> Board
+initialBoard t = Board (array ((0,0), (6,6)) [ (location, initializeLocations location) | location <- allLocations ])
 
 allLocations :: [(Int,Int)]
 allLocations = range ((0,0), (6,6))
@@ -215,8 +218,10 @@ cheaterCheck (Action ((x,y), d)) = (x==0&&y==0&&d==Up)
 
 play :: IO ()
 play = do
-    putStr "Time to play the game!\n(0,0) is the top left corner\n"
-    (result,actions) <- (playGame initialBoard Continue [])
+    putStrLn "Time to play the game!\n(0,0) is top corner"
+    putStrLn "0-6 for axis\nup/down/left/right for direction"
+    (result,actions) <- (playGame (initialBoard English) Continue [])
+
     putStrLn("You "++(show result))
     putStrLn("Your actions: " ++ (show actions))
 
@@ -226,10 +231,10 @@ playGame board state actions= do
     putStr (show board)
     action <- askForAction board
     let nextBoard = makeMove action board
-    if (cheaterCheck action) then do
-        let (resultState,computedActions) = solve board
-        return (resultState, actions++computedActions)
-    else if (nextBoard == Nothing) then do
+    --if (cheaterCheck action) then do
+        --let (resultState,computedActions) = solve board
+        --return (resultState, actions++computedActions)
+    if (nextBoard == Nothing) then do
         putStrLn("Previous move is illegal")
         playGame board state actions
 
