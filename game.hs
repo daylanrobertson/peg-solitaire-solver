@@ -16,13 +16,13 @@ data Tile = Invalid | Empty | Peg
     deriving (Eq, Ord)
 
 data Direction = Up | Down | Left | Right
-    deriving (Enum, Show)
+    deriving (Enum, Show,Eq)
 
 data State = Win | Lose | Continue
     deriving (Eq, Show)
 
 data Action = Action ((Int,Int), Direction)
-    -- deriving Eq
+    deriving (Eq)
 
 newtype Board = Board (Array (Int, Int) Tile)
     deriving (Eq, Ord)
@@ -35,10 +35,7 @@ instance Show Board where
 
 instance Show Action where
     show (Action ((x,y), d)) = "("++show (x,y) ++", "++ show (d)++")"
-
-instance Eq (Eq x, Eq y, Eq direction) => (Action (x,y), d) where
      
-
 
 getState :: Board -> State
 getState board
@@ -158,25 +155,36 @@ askForAction board = do
 solve :: Board -> (State, [Action])
 solve board = do 
     let moves = possiblePlayOnBoard board
-    solveHelper moves board
-    
-    -- (Lose, [(Action ((3,3), Up))]) 
+    solveHelper moves board []
 
-solveHelper :: [Action] -> Board -> (State, [Action])
-solveHelper moves board = do
-    let firstMove = moves !! 0
-    let nextBoard = makeMove firstMove board
-    if (nextBoard == Nothing) then do
-        let nextMoves = delete (moves !! 0) moves
-        solveHelper nextMoves board
-    else 
+solveHelper :: [Action] -> Board -> [Action] -> (State, [Action])
+solveHelper moves board movesSoFar = do
+    if (length moves == 0) then do
+        (Lose, movesSoFar)
+    else do
+        let firstMove = moves !! 0
+        let nextBoard = makeMove firstMove board
+            -- let nextMoves = delete (moves !! 0) moves
+            -- solveHelper nextMoves board movesSoFar
         if (getState (fromJust nextBoard) == Continue) then do
-        solveHelper (possiblePlayOnBoard (fromJust nextBoard)++moves) (fromJust nextBoard)
-        else 
-        ((getState (fromJust nextBoard)), [])
-        -- win or lose. 
+            let (state, actions) = solveHelper (possiblePlayOnBoard (fromJust nextBoard)) (fromJust nextBoard) (movesSoFar++[firstMove])
+            if (state == Lose) then do
+                let restOfMoves = delete (moves !! 0) moves
+                solveHelper restOfMoves board movesSoFar
+            else (state, actions)
+        else if (getState (fromJust nextBoard) == Lose) then do
+            (Lose, movesSoFar++[firstMove])
+            -- let nextMoves = delete (moves !! 0) moves
+            -- solveHelper nextMoves board movesSoFar
+        else
+            (Win, movesSoFar++[firstMove])
+            -- ((getState (fromJust nextBoard)), (movesSoFar++[firstMove]))
 
-    
+
+cheaterCheck :: Action -> Bool
+cheaterCheck (Action ((x,y), d)) = (x==0&&y==0&&d==Up)
+
+
 play :: IO ()
 play = do
     putStr "Time to play the game!\n(0,0) is the top left corner\n"
@@ -190,7 +198,10 @@ playGame board state actions= do
     putStr (show board)
     action <- askForAction board
     let nextBoard = makeMove action board
-    if (nextBoard == Nothing) then do
+    if (cheaterCheck action) then do
+        let (resultState,computedActions) = solve board
+        return (resultState, actions++computedActions)
+    else if (nextBoard == Nothing) then do
         putStrLn("Previous move is illegal")
         playGame board state actions
 
