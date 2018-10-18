@@ -6,6 +6,7 @@ module Game where
 
     -- to simplify, maybe we should just consider an IO game that either reaches the goal, or hits a game over on user input rather than a solver
 
+import Data.List
 import Data.Array
 import Data.Maybe
 import Control.Monad
@@ -21,7 +22,7 @@ data State = Win | Lose | Continue
     deriving (Eq, Show)
 
 data Action = Action ((Int,Int), Direction)
-
+    -- deriving Eq
 
 newtype Board = Board (Array (Int, Int) Tile)
     deriving (Eq, Ord)
@@ -34,6 +35,10 @@ instance Show Board where
 
 instance Show Action where
     show (Action ((x,y), d)) = "("++show (x,y) ++", "++ show (d)++")"
+
+instance Eq (Eq x, Eq y, Eq direction) => (Action (x,y), d) where
+     
+
 
 getState :: Board -> State
 getState board
@@ -151,11 +156,30 @@ askForAction board = do
     return (Action ((x,y),dir))
 
 solve :: Board -> (State, [Action])
-solve board = (Lose, [])
+solve board = do 
+    let moves = possiblePlayOnBoard board
+    solveHelper moves board
+    
+    -- (Lose, [(Action ((3,3), Up))]) 
 
+solveHelper :: [Action] -> Board -> (State, [Action])
+solveHelper moves board = do
+    let firstMove = moves !! 0
+    let nextBoard = makeMove firstMove board
+    if (nextBoard == Nothing) then do
+        let nextMoves = delete (moves !! 0) moves
+        solveHelper nextMoves board
+    else 
+        if (getState (fromJust nextBoard) == Continue) then do
+        solveHelper (possiblePlayOnBoard (fromJust nextBoard)++moves) (fromJust nextBoard)
+        else 
+        ((getState (fromJust nextBoard)), [])
+        -- win or lose. 
+
+    
 play :: IO ()
 play = do
-    putStr "Time to play the game!\n(0,0) is top corner"
+    putStr "Time to play the game!\n(0,0) is the top left corner\n"
     (result,actions) <- (playGame initialBoard Continue [])
     putStrLn("You "++(show result))
     putStrLn("Your actions: " ++ (show actions))
@@ -178,5 +202,9 @@ playGame board state actions= do
         else    
             playGame b s (actions++[action])
         
+
+
+
+
 
 
