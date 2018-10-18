@@ -203,10 +203,10 @@ playGame board state actions= do
     putStr (show board)
     action <- askForAction board
     let nextBoard = makeMove action board
-    if (cheaterCheck action) then do
-        let (resultState,computedActions) = solve board
-        return (resultState, actions++computedActions)
-    else if (nextBoard == Nothing) then do
+    --if (cheaterCheck action) then do
+        --let (resultState,computedActions) = solve board
+        --return (resultState, actions++computedActions)
+    if (nextBoard == Nothing) then do
         putStrLn("Previous move is illegal")
         playGame board state actions
 
