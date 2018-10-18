@@ -6,6 +6,7 @@ module Game where
 
     -- to simplify, maybe we should just consider an IO game that either reaches the goal, or hits a game over on user input rather than a solver
 
+import Data.List
 import Data.Array
 import Data.Maybe
 import Control.Monad
@@ -24,7 +25,7 @@ data State = Win | Lose | Continue
     deriving (Eq, Show)
 
 data Action = Action ((Int,Int), Direction)
-
+    deriving (Eq)
 
 newtype Board = Board (Array (Int, Int) Tile)
     deriving (Eq, Ord)
@@ -37,6 +38,7 @@ instance Show Board where
 
 instance Show Action where
     show (Action ((x,y), d)) = "("++show (x,y) ++", "++ show (d)++")"
+     
 
 getState :: Board -> State
 getState board
@@ -154,16 +156,44 @@ askForAction board = do
     return (Action ((x,y),dir))
 
 solve :: Board -> (State, [Action])
-solve board = (Lose, [])
+solve board = do 
+    let moves = possiblePlayOnBoard board
+    solveHelper moves board []
+
+solveHelper :: [Action] -> Board -> [Action] -> (State, [Action])
+solveHelper moves board movesSoFar = do
+    if (length moves == 0) then do
+        (Lose, movesSoFar)
+    else do
+        let firstMove = moves !! 0
+        let nextBoard = makeMove firstMove board
+            -- let nextMoves = delete (moves !! 0) moves
+            -- solveHelper nextMoves board movesSoFar
+        if (getState (fromJust nextBoard) == Continue) then do
+            let (state, actions) = solveHelper (possiblePlayOnBoard (fromJust nextBoard)) (fromJust nextBoard) (movesSoFar++[firstMove])
+            if (state == Lose) then do
+                let restOfMoves = delete (moves !! 0) moves
+                solveHelper restOfMoves board movesSoFar
+            else (state, actions)
+        else if (getState (fromJust nextBoard) == Lose) then do
+            (Lose, movesSoFar++[firstMove])
+            -- let nextMoves = delete (moves !! 0) moves
+            -- solveHelper nextMoves board movesSoFar
+        else
+            (Win, movesSoFar++[firstMove])
+            -- ((getState (fromJust nextBoard)), (movesSoFar++[firstMove]))
+
 
 cheaterCheck :: Action -> Bool
 cheaterCheck (Action ((x,y), d)) = (x==0&&y==0&&d==Up)
+
 
 play :: IO ()
 play = do
     putStrLn "Time to play the game!\n(0,0) is top corner"
     putStrLn "0-6 for axis\nup/down/left/right for direction"
     (result,actions) <- (playGame (initialBoard English) Continue [])
+
     putStrLn("You "++(show result))
     putStrLn("Your actions: " ++ (show actions))
 
@@ -188,5 +218,9 @@ playGame board state actions= do
         else    
             playGame b s (actions++[action])
         
+
+
+
+
 
 
