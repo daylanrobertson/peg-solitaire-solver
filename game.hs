@@ -1,16 +1,14 @@
 module Game where
 
-    -- Entry point is 'play'
-
-    -- helpers in place and somewhat tested, but have been experimenting with 'Maybe' for exception handling and running into errors when trying to sync up with IO for game playing.
-
-    -- to simplify, maybe we should just consider an IO game that either reaches the goal, or hits a game over on user input rather than a solver
-
 import Data.List
 import Data.Array
 import Data.Maybe
 import Control.Monad
 import Text.Read
+
+
+ 
+--------Data type declarations----------------
 
 data Tile = Invalid | Empty | Peg
     deriving (Eq, Ord)
@@ -40,6 +38,8 @@ instance Show Action where
     show (Action ((x,y), d)) = "("++show (x,y) ++", "++ show (d)++")"
      
 
+--------- Game State Control ---------
+
 getState :: Board -> State
 getState board
     |winGame board = Win
@@ -56,11 +56,8 @@ easyWinGame (Board b) = ((length [t| t<- elems b,t==Peg ])==1)
 loseGame :: Board -> Bool
 loseGame (Board b) = length (possiblePlayOnBoard (Board b)) == 0
 
-possiblePlayOnBoard :: Board -> [Action]
-possiblePlayOnBoard (Board b) = foldl (++) [] [possiblePlayOnPos pos (Board b)|pos<-indices b]
 
-possiblePlayOnPos :: (Int,Int) -> Board -> [Action]
-possiblePlayOnPos position board = [Action (position, dir) |dir <- [Up .. ],isJust (makeMove (Action (position,dir)) board)]
+--------- Game Initialization & Helpers ---------
 
 tileToString :: Tile -> String
 tileToString t
@@ -94,6 +91,9 @@ initialBoard t = Board (array ((0,0), (6,6)) [ (location, initializeLocations lo
 allLocations :: [(Int,Int)]
 allLocations = range ((0,0), (6,6))
 
+
+--------- Peg Movement Functions ---------
+
 pegAt :: (Int, Int) -> Board -> Maybe Tile
 pegAt position (Board board) = do
     guard (isValidLocation position) 
@@ -102,10 +102,12 @@ pegAt position (Board board) = do
 placePiece :: (Int, Int) -> Tile -> Board -> Board
 placePiece position tile (Board board) = Board (board // [(position, tile)])
 
-newPositions (x,y) Down  = ((x,y+1), (x,y+2))
-newPositions (x,y) Game.Right   = ((x+1,y), (x+2,y))
-newPositions (x,y) Game.Up  = ((x,y-1), (x,y-2))
-newPositions (x,y) Game.Left   = ((x-1,y), (x-2,y))
+possiblePlayOnBoard :: Board -> [Action]
+possiblePlayOnBoard (Board b) = foldl (++) [] [possiblePlayOnPos pos (Board b)|pos<-indices b]
+
+possiblePlayOnPos :: (Int,Int) -> Board -> [Action]
+possiblePlayOnPos position board = [Action (position, dir) |dir <- [Up .. ],isJust (makeMove (Action (position,dir)) board)]
+
 
 makeMove :: Action -> Board -> Maybe Board
 makeMove (Action (position, direction)) board = do
@@ -120,6 +122,14 @@ makeMove (Action (position, direction)) board = do
                 $ board
     else do
         Nothing
+
+newPositions (x,y) Down  = ((x,y+1), (x,y+2))
+newPositions (x,y) Game.Right   = ((x+1,y), (x+2,y))
+newPositions (x,y) Game.Up  = ((x,y-1), (x,y-2))
+newPositions (x,y) Game.Left   = ((x-1,y), (x-2,y))
+
+
+--------- IO Prompts ---------
 
 askFor :: String -> IO Int
 askFor s = do
@@ -159,6 +169,11 @@ askForAction board = do
     y <- askFor "Y" 
     dir <- (askForDir (x,y) board)
     return (Action ((x,y),dir))
+
+--------- Game Solvers ---------
+
+cheaterCheck :: Action -> Bool
+cheaterCheck (Action ((x,y), d)) = (x==0&&y==0&&d==Up)
 
 solve :: Board -> (State, [Action])
 solve board = do 
@@ -202,9 +217,7 @@ solveHelperMem moves board movesSoFar losingBoards = do
             (solveHelperMem (delete (moves !! 0) moves) board movesSoFar losingBoards)
 
 
-cheaterCheck :: Action -> Bool
-cheaterCheck (Action ((x,y), d)) = (x==0&&y==0&&d==Up)
-
+--------- Game Entry Point ---------
 
 play :: IO ()
 play = do
@@ -238,17 +251,9 @@ playGame board state actions= do
         
 
 
-
-
-
-
-
-
-
--- Debugging Functions --
+--------- Debugging Functions ---------
 
 testingWithIO = solveHelperDebug (possiblePlayOnBoard (initialBoard English)) (initialBoard English) [] 0 
-
 
 solveHelperDebug:: [Action] -> Board -> [Action] -> Int -> IO (State,[Action])
 solveHelperDebug moves board movesSoFar depth = do
@@ -303,6 +308,3 @@ solveHelperDebugMem moves board movesSoFar depth lostBoards = do
                 return ((Win,as),[])
             else do
                 (solveHelperDebugMem (delete (moves !! 0) moves) board movesSoFar depth (union lostBoards lbs))
-
-
-
