@@ -185,28 +185,37 @@ solveHelper moves board movesSoFar = do
 
 
             
-testing = solveHelperDebug (possiblePlayOnBoard initialBoard) initialBoard []
+testing = solveHelperDebug (possiblePlayOnBoard (initialBoard English)) (initialBoard English) [] 0
 
-solveHelperDebug moves board movesSoFar = do
+solveHelperDebug moves board movesSoFar depth = do
+    putStrLn(" ")
+    putStrLn("At depth: " ++ (show depth))
+    putStrLn("Before: ")
+    putStrLn(show board)
     if (length moves == 0) then do
+        putStrLn("out of possible moves")
         return (Lose, movesSoFar)
     else do
         let firstMove = moves !! 0
+        putStrLn("move: " ++ show firstMove)
         let nextBoard = makeMove firstMove board
             -- let nextMoves = delete (moves !! 0) moves
             -- solveHelper nextMoves board movesSoFar
+        putStrLn("After: ")
+        putStrLn(show (fromJust nextBoard))
         if (getState (fromJust nextBoard) == Continue) then do
-            (state, actions) <- solveHelperDebug(possiblePlayOnBoard (fromJust nextBoard)) (fromJust nextBoard) (movesSoFar++[firstMove])
+            (state, actions) <- solveHelperDebug(possiblePlayOnBoard (fromJust nextBoard)) (fromJust nextBoard) (movesSoFar++[firstMove]) (depth+1)
             if (state == Lose) then do
                 let restOfMoves = delete (moves !! 0) moves
-                solveHelperDebug restOfMoves board movesSoFar
+                solveHelperDebug restOfMoves board movesSoFar (depth)
             else return (state, actions)
         else if (getState (fromJust nextBoard) == Lose) then do
-            putStrLn("hi")
+            putStrLn("deadend, backtracking")
             return (Lose, movesSoFar++[firstMove])
             -- let nextMoves = delete (moves !! 0) moves
             -- solveHelper nextMoves board movesSoFar
-        else
+        else do
+            putStrLn("win state reached")
             return (Win, movesSoFar++[firstMove])
             -- ((getState (fromJust nextBoard)), (movesSoFar++[firstMove]))
 
