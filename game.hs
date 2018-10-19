@@ -171,13 +171,13 @@ solveHelper moves board movesSoFar = do
     if (winGame board) then
         (Win, movesSoFar)
     else if (length moves == 0) then
-        (Lose, movesSoFar)
+        (Lose, [])
     else do
         let currentMove = moves !! 0
         let nextBoard = fromJust(makeMove currentMove board)
         let (nextResult,as) = solveHelper (possiblePlayOnBoard nextBoard)  nextBoard (movesSoFar++[currentMove])
         if (nextResult==Win) then 
-            (Win,movesSoFar++as)
+            (Win,as)
         else
             (solveHelper (delete (moves !! 0) moves) board movesSoFar)
 
@@ -259,10 +259,10 @@ playGame board state actions= do
     putStr (show board)
     action <- askForAction board
     let nextBoard = makeMove action board
-    --if (cheaterCheck action) then do
-        --let (resultState,computedActions) = solve board
-        --return (resultState, actions++computedActions)
-    if (nextBoard == Nothing) then do
+    if (cheaterCheck action) then do
+        let (resultState,computedActions) = solve board
+        return (resultState, actions++computedActions)
+    else if (nextBoard == Nothing) then do
         putStrLn("Previous move is illegal")
         playGame board state actions
 
