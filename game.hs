@@ -260,6 +260,7 @@ playGame board state actions= do
     action <- askForAction board
     let nextBoard = makeMove action board
     if (cheaterCheck action) then do
+        putStrLn("You called the solver\nIt is doing the work for you")
         let (resultState,computedActions) = solve board
         return (resultState, actions++computedActions)
     else if (nextBoard == Nothing) then do
