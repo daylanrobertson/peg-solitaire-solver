@@ -49,6 +49,10 @@ getState board
 winGame :: Board -> Bool
 winGame (Board b) = ((length [t| t<- elems b,t==Peg ])==1 && fromJust(pegAt(3,3) (Board b))==Peg)
 
+easyWinGame :: Board -> Bool
+easyWinGame (Board b) = ((length [t| t<- elems b,t==Peg ])==1)
+
+
 loseGame :: Board -> Bool
 loseGame (Board b) = length (possiblePlayOnBoard (Board b)) == 0
 
@@ -82,6 +86,7 @@ initializeLocations (3,3) = Empty
 initializeLocations position
   | isInvalidLocation position = Invalid
   | otherwise = Peg
+
 
 initialBoard :: BoardType -> Board
 initialBoard t = Board (array ((0,0), (6,6)) [ (location, initializeLocations location) | location <- allLocations ])
@@ -160,21 +165,24 @@ solve board = do
     let moves = possiblePlayOnBoard board
     solveHelper moves board []
 
+testing = solveHelper(possiblePlayOnBoard (initialBoard English)) (initialBoard English) []
 solveHelper :: [Action] -> Board -> [Action] -> (State, [Action])
 solveHelper moves board movesSoFar = do
-    if (length moves == 0) then
+    if (winGame board) then
+        (Win, movesSoFar)
+    else if (length moves == 0) then
         (Lose, movesSoFar)
     else do
         let currentMove = moves !! 0
         let nextBoard = fromJust(makeMove currentMove board)
         let (nextResult,as) = solveHelper (possiblePlayOnBoard nextBoard)  nextBoard (movesSoFar++[currentMove])
         if (nextResult==Win) then 
-            (Win,as)
+            (Win,movesSoFar++as)
         else
             (solveHelper (delete (moves !! 0) moves) board movesSoFar)
 
             
-testing = solveHelperDebug (possiblePlayOnBoard (initialBoard English)) (initialBoard English) [] 0 
+testingWithIO = solveHelperDebug (possiblePlayOnBoard (initialBoard English)) (initialBoard English) [] 0 
 lostBoard :: [Board]
 lostBoard = []
 
