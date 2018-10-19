@@ -203,6 +203,7 @@ solveHelperDebug moves board movesSoFar depth = do
             else do
                 solveHelperDebug (delete (moves !! 0) moves) board movesSoFar depth 
 
+testingMem = solveHelperDebugMem (possiblePlayOnBoard (initialBoard English)) (initialBoard English) [] 0 []
 solveHelperDebugMem:: [Action] -> Board -> [Action] -> Int -> [Board]-> IO ((State,[Action]),[Board])
 solveHelperDebugMem moves board movesSoFar depth lostBoards = do
     putStrLn(" ")
