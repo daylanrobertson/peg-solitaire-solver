@@ -158,7 +158,7 @@ askForAction board = do
 solve :: Board -> (State, [Action])
 solve board = do 
     let moves = possiblePlayOnBoard board
-    solveHelper moves board []
+    solveHelper2 moves board []
 
 solveHelper :: [Action] -> Board -> [Action] -> (State, [Action])
 solveHelper moves board movesSoFar = do
@@ -183,41 +183,80 @@ solveHelper moves board movesSoFar = do
             (Win, movesSoFar++[firstMove])
             -- ((getState (fromJust nextBoard)), (movesSoFar++[firstMove]))
 
+solveHelper2 :: [Action] -> Board -> [Action] -> (State, [Action])
+solveHelper2 moves board movesSoFar = do
+    if (length moves == 0) then do
+        (Lose, movesSoFar)
+    else do
+        if (getState board == Lose) then do
+            let restOfMoves = delete (moves !! 0) moves
+            solveHelper2 restOfMoves board movesSoFar
+        else if (getState board == Win) then do
+            (Win, movesSoFar)
+        else do
+            let firstMove = moves !! 0
+            let nextBoard = makeMove firstMove board
+            let restOfMoves = delete firstMove moves
+            solveHelper2 (possiblePlayOnBoard (fromJust nextBoard)++restOfMoves) (fromJust nextBoard) (movesSoFar++[firstMove])
+            -- solveHelper2 (moves (fromJust nextBoard) (movesSoFar++[firstMove]))
+            -- (possiblePlayOnBoard (fromJust nextBoard))++restOfMoves)
+
+           
+           
 
             
-testing = solveHelperDebug (possiblePlayOnBoard (initialBoard English)) (initialBoard English) [] 0
+-- testing = solveHelperDebug (possiblePlayOnBoard (initialBoard English)) (initialBoard English) [] 0
 
-solveHelperDebug moves board movesSoFar depth = do
-    putStrLn(" ")
-    putStrLn("At depth: " ++ (show depth))
-    putStrLn("Before: ")
-    putStrLn(show board)
-    if (length moves == 0) then do
-        putStrLn("out of possible moves")
-        return (Lose, movesSoFar)
-    else do
-        let firstMove = moves !! 0
-        putStrLn("move: " ++ show firstMove)
-        let nextBoard = makeMove firstMove board
-            -- let nextMoves = delete (moves !! 0) moves
-            -- solveHelper nextMoves board movesSoFar
-        putStrLn("After: ")
-        putStrLn(show (fromJust nextBoard))
-        if (getState (fromJust nextBoard) == Continue) then do
-            (state, actions) <- solveHelperDebug(possiblePlayOnBoard (fromJust nextBoard)) (fromJust nextBoard) (movesSoFar++[firstMove]) (depth+1)
-            if (state == Lose) then do
-                let restOfMoves = delete (moves !! 0) moves
-                solveHelperDebug restOfMoves board movesSoFar (depth)
-            else return (state, actions)
-        else if (getState (fromJust nextBoard) == Lose) then do
-            putStrLn("deadend, backtracking")
-            return (Lose, movesSoFar++[firstMove])
-            -- let nextMoves = delete (moves !! 0) moves
-            -- solveHelper nextMoves board movesSoFar
-        else do
-            putStrLn("win state reached")
-            return (Win, movesSoFar++[firstMove])
-            -- ((getState (fromJust nextBoard)), (movesSoFar++[firstMove]))
+-- solveHelperDebug moves board movesSoFar depth = do
+--     putStrLn(" ")
+--     putStrLn("At depth: " ++ (show depth))
+--     putStrLn("Before: ")
+--     putStrLn(show board)
+--     if (length moves == 0) then do
+--         putStrLn("out of possible moves")
+--         return (Lose, movesSoFar)
+--     else do
+--         if (getState board == Lose) then do
+--             putStrLn("deadend, backtracking")
+--             return (Lose, movesSoFar)
+--         else if (getState board == Win) then do
+--             return (Win, movesSoFar)
+--         else do     
+--             -- state must be continue
+--             let firstMove = moves !! 0
+--             putStrLn("move: " ++ show firstMove)
+--             let nextBoard = makeMove firstMove board
+--             return solveHelperDebug((possiblePlayOnBoard (fromJust nextBoard)++moves) (fromJust nextBoard) (movesSoFar++[firstMove]) (depth+1))
+
+
+
+
+        
+       
+        --     -- let nextMoves = delete (moves !! 0) moves
+        --     -- solveHelper nextMoves board movesSoFar
+        -- putStrLn("After: ")
+        -- putStrLn(show (fromJust nextBoard))
+        -- if (getState (fromJust nextBoard) == Lose) then do
+        --     putStrLn("deadend, backtracking")
+        --     return (Lose, movesSoFar++[firstMove])
+        -- else if (getState (fromJust nextBoard))
+
+        -- if (getState (fromJust nextBoard) == Continue) then do
+        --     (state, actions) <- solveHelperDebug(possiblePlayOnBoard (fromJust nextBoard)) (fromJust nextBoard) (movesSoFar++[firstMove]) (depth+1)
+        --     if (state == Lose) then do
+        --         let restOfMoves = delete (moves !! 0) moves
+        --         solveHelperDebug restOfMoves board movesSoFar (depth)
+        --     else return (state, actions)
+        -- else if (getState (fromJust nextBoard) == Lose) then do
+        --     putStrLn("deadend, backtracking")
+        --     return (Lose, movesSoFar++[firstMove])
+        --     -- let nextMoves = delete (moves !! 0) moves
+        --     -- solveHelper nextMoves board movesSoFar
+        -- else do
+        --     putStrLn("win state reached")
+        --     return (Win, movesSoFar++[firstMove])
+        --     -- ((getState (fromJust nextBoard)), (movesSoFar++[firstMove]))
 
 
 
